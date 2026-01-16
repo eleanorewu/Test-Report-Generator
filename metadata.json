@@ -1,0 +1,5 @@
+{
+  "name": "QA Test Report Generator",
+  "description": "A professional tool for QA engineers to create and export visual test reports with screenshots, environment details, and expected vs actual comparisons.",
+  "requestFramePermissions": []
+}
