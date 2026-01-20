@@ -19,8 +19,6 @@ export interface ReportData {
   screenshot: string | null;
   screenshotName: string | null;
   problemDescription: string;
-  expectedResultType: 'text' | 'image';
-  expectedText: string;
   expectedImage: string | null;
   expectedImageName: string | null;
   actualMarkerBoxes: MarkerBox[];

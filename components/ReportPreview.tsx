@@ -83,7 +83,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
   };
 
   const handleExpectedPointerDown = (e: React.PointerEvent) => {
-    if (data.expectedResultType !== 'image' || !data.expectedImage) return;
+    if (!data.expectedImage) return;
     const p = getPercentPos(expectedContainerRef.current, e.clientX, e.clientY);
     if (!p) return;
     (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
@@ -139,7 +139,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
         </div>
         <div className="relative flex items-center justify-center text-center min-h-[56px]">
           <h2 className="text-3xl font-bold text-slate-800 tracking-tight text-center w-full">預期畫面</h2>
-          {showClearButtons && data.expectedResultType === 'image' && data.expectedImage && expectedMarkerBoxes.length > 0 && (
+          {showClearButtons && data.expectedImage && expectedMarkerBoxes.length > 0 && (
             <button
               onClick={() => onChange({ ...data, expectedMarkerBoxes: [] })}
               className="absolute right-0 top-1/2 -translate-y-1/2 py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-sm bg-white text-red-600 border border-slate-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98]"
@@ -209,61 +209,53 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
 
         {/* Right Column: Expected Screen */}
         <div className="flex flex-col items-center w-full">
-          {data.expectedResultType === 'image' ? (
-            data.expectedImage ? (
-              <div className={`relative w-full ${colMaxWidth}`}>
-                <div
-                  ref={expectedContainerRef}
-                  className="relative touch-none cursor-crosshair"
-                  onPointerDown={handleExpectedPointerDown}
-                  onPointerMove={handleExpectedPointerMove}
-                  onPointerUp={finishExpectedDrawing}
-                  onPointerCancel={finishExpectedDrawing}
-                  onPointerLeave={() => { if (isDrawingExpected) finishExpectedDrawing(); }}
-                  aria-label="在預期畫面上拖曳以新增標記"
-                >
-                  <img src={data.expectedImage} alt="Expected" className="w-full h-auto block pointer-events-none" />
+          {data.expectedImage ? (
+            <div className={`relative w-full ${colMaxWidth}`}>
+              <div
+                ref={expectedContainerRef}
+                className="relative touch-none cursor-crosshair"
+                onPointerDown={handleExpectedPointerDown}
+                onPointerMove={handleExpectedPointerMove}
+                onPointerUp={finishExpectedDrawing}
+                onPointerCancel={finishExpectedDrawing}
+                onPointerLeave={() => { if (isDrawingExpected) finishExpectedDrawing(); }}
+                aria-label="在預期畫面上拖曳以新增標記"
+              >
+                <img src={data.expectedImage} alt="Expected" className="w-full h-auto block pointer-events-none" />
 
-                  {expectedMarkerBoxes.map((box, idx) => (
-                    <div
-                      key={`${idx}-${box.x}-${box.y}-${box.width}-${box.height}`}
-                      className="absolute pointer-events-none"
-                      style={{
-                        left: `${box.x}%`,
-                        top: `${box.y}%`,
-                        width: `${box.width}%`,
-                        height: `${box.height}%`,
-                      }}
-                    >
-                      <div className="w-full h-full border-[6px] border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
-                    </div>
-                  ))}
+                {expectedMarkerBoxes.map((box, idx) => (
+                  <div
+                    key={`${idx}-${box.x}-${box.y}-${box.width}-${box.height}`}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${box.x}%`,
+                      top: `${box.y}%`,
+                      width: `${box.width}%`,
+                      height: `${box.height}%`,
+                    }}
+                  >
+                    <div className="w-full h-full border-[6px] border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
+                  </div>
+                ))}
 
-                  {expectedDraftBox && (
-                    <div
-                      className="absolute pointer-events-none"
-                      style={{
-                        left: `${expectedDraftBox.x}%`,
-                        top: `${expectedDraftBox.y}%`,
-                        width: `${expectedDraftBox.width}%`,
-                        height: `${expectedDraftBox.height}%`,
-                      }}
-                    >
-                      <div className="w-full h-full border-[6px] border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.35)]"></div>
-                    </div>
-                  )}
-                </div>
+                {expectedDraftBox && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${expectedDraftBox.x}%`,
+                      top: `${expectedDraftBox.y}%`,
+                      width: `${expectedDraftBox.width}%`,
+                      height: `${expectedDraftBox.height}%`,
+                    }}
+                  >
+                    <div className="w-full h-full border-[6px] border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.35)]"></div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 ${colMaxWidth}`}>
-                <span className="font-bold text-3xl">尚未上傳截圖</span>
-              </div>
-            )
+            </div>
           ) : (
-            <div className={`w-full flex flex-col items-center justify-center border-4 border-dashed border-slate-100 text-slate-400 bg-slate-50/50 aspect-[9/16] ${colMaxWidth}`}>
-               <p className="text-2xl text-slate-600 leading-relaxed whitespace-pre-wrap font-medium text-center px-10">
-                 {data.expectedText || "尚未輸入預期效果內容"}
-               </p>
+            <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 ${colMaxWidth}`}>
+              <span className="font-bold text-3xl">尚未上傳截圖</span>
             </div>
           )}
         </div>

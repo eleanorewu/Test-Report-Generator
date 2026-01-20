@@ -230,63 +230,32 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
 
       {/* Expected Result */}
       <div className="pt-4 border-t border-slate-100 space-y-4">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <Layout className="w-4 h-4" /> 預期畫面
+        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+          <Layout className="w-4 h-4" /> 
+        </label>
+        <div className="flex flex-col gap-2">
+          {data.expectedImage && (
+            <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
+              <span className="truncate" title={data.expectedImageName || '已上傳檔案'}>
+                {data.expectedImageName || '已上傳檔案'}
+              </span>
+              <button
+                type="button"
+                onClick={() => onChange({ ...data, expectedImage: null, expectedImageName: null, expectedMarkerBoxes: [] })}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="刪除檔案"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <label className="inline-flex items-center justify-center gap-2 px-3 h-[52px] rounded-lg border border-dashed border-slate-300 text-slate-600 text-xs font-semibold cursor-pointer hover:bg-slate-50 transition-colors bg-white">
+            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'expectedImage')} className="hidden" />
+            <ImageIcon className="w-4 h-4 opacity-70" />
+            {data.expectedImage ? '重新上傳' : '點擊上傳'}
           </label>
-          {/* Updated Toggle Style to match Page Layout Toggle */}
-          <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200 shadow-sm">
-            <button
-              onClick={() => onChange({ ...data, expectedResultType: 'text' })}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                data.expectedResultType === 'text' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <Type className="w-3.5 h-3.5" /> 文字
-            </button>
-            <button
-              onClick={() => onChange({ ...data, expectedResultType: 'image' })}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                data.expectedResultType === 'image' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" /> 圖片
-            </button>
-          </div>
         </div>
-
-        {data.expectedResultType === 'text' ? (
-          <textarea
-            value={data.expectedText}
-            onChange={(e) => onChange({ ...data, expectedText: e.target.value })}
-            placeholder="描述預期效果..."
-            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all min-h-[80px] resize-none text-xs text-slate-900 bg-white"
-          />
-        ) : (
-          <div className="flex flex-col gap-2">
-            {data.expectedImage && (
-              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
-                <span className="truncate" title={data.expectedImageName || '已上傳檔案'}>
-                  {data.expectedImageName || '已上傳檔案'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onChange({ ...data, expectedImage: null, expectedImageName: null, expectedMarkerBoxes: [] })}
-                  className="text-red-500 hover:text-red-700 p-1"
-                  title="刪除檔案"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            <label className="inline-flex items-center justify-center gap-2 px-3 h-[52px] rounded-lg border border-dashed border-slate-300 text-slate-600 text-xs font-semibold cursor-pointer hover:bg-slate-50 transition-colors bg-white">
-              <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'expectedImage')} className="hidden" />
-              <ImageIcon className="w-4 h-4 opacity-70" />
-              {data.expectedImage ? '重新上傳' : '點擊上傳'}
-            </label>
-          </div>
-        )}
       </div>
     </div>
   );

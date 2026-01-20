@@ -18,8 +18,6 @@ const App: React.FC = () => {
     screenshot: null,
     screenshotName: null,
     problemDescription: '',
-    expectedResultType: 'image', // 預設改為圖片
-    expectedText: '',
     expectedImage: null,
     expectedImageName: null,
     actualMarkerBoxes: [],
