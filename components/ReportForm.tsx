@@ -231,7 +231,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
       {/* Expected Result */}
       <div className="pt-4 border-t border-slate-100 space-y-4">
         <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-          <Layout className="w-4 h-4" /> 
+          <Layout className="w-4 h-4" /> 預期畫面
         </label>
         <div className="flex flex-col gap-2">
           {data.expectedImage && (
