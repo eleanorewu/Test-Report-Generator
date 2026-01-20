@@ -1,14 +1,30 @@
 
-import React from 'react';
-import { ReportData, DeviceEnvironment } from '../types';
+import React, { useMemo, useRef, useState } from 'react';
+import { ReportData, DeviceEnvironment, MarkerBox } from '../types';
+import { Eraser } from 'lucide-react';
 
 interface ReportPreviewProps {
   data: ReportData;
+  onChange: (data: ReportData) => void;
+  showClearButtons?: boolean;
 }
 
-export const ReportPreview: React.FC<ReportPreviewProps> = ({ data }) => {
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, showClearButtons = true }) => {
   const isMobile = data.environment === DeviceEnvironment.IOS || data.environment === DeviceEnvironment.ANDROID;
   const colMaxWidth = isMobile ? 'max-w-[450px]' : 'max-w-full';
+
+  const actualContainerRef = useRef<HTMLDivElement>(null);
+  const expectedContainerRef = useRef<HTMLDivElement>(null);
+
+  const [isDrawingActual, setIsDrawingActual] = useState(false);
+  const [actualStartPos, setActualStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [actualDraftBox, setActualDraftBox] = useState<MarkerBox | null>(null);
+
+  const [isDrawingExpected, setIsDrawingExpected] = useState(false);
+  const [expectedStartPos, setExpectedStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [expectedDraftBox, setExpectedDraftBox] = useState<MarkerBox | null>(null);
 
   // 格式化標籤：首字母大寫，其餘小寫
   const formatTag = (tag: string) => {
@@ -16,15 +32,123 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data }) => {
     return tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
   };
 
+  const actualMarkerBoxes = useMemo(() => data.actualMarkerBoxes ?? [], [data.actualMarkerBoxes]);
+  const expectedMarkerBoxes = useMemo(() => data.expectedMarkerBoxes ?? [], [data.expectedMarkerBoxes]);
+
+  const getPercentPos = (el: HTMLDivElement | null, clientX: number, clientY: number) => {
+    if (!el) return null;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    return { x: clamp(x, 0, 100), y: clamp(y, 0, 100) };
+  };
+
+  const handleActualPointerDown = (e: React.PointerEvent) => {
+    if (!data.screenshot) return;
+    const p = getPercentPos(actualContainerRef.current, e.clientX, e.clientY);
+    if (!p) return;
+    (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
+    setIsDrawingActual(true);
+    setActualStartPos(p);
+    setActualDraftBox({ x: p.x, y: p.y, width: 0, height: 0 });
+  };
+
+  const handleActualPointerMove = (e: React.PointerEvent) => {
+    if (!isDrawingActual || !actualStartPos) return;
+    const p = getPercentPos(actualContainerRef.current, e.clientX, e.clientY);
+    if (!p) return;
+
+    const x = Math.min(actualStartPos.x, p.x);
+    const y = Math.min(actualStartPos.y, p.y);
+    const width = Math.abs(p.x - actualStartPos.x);
+    const height = Math.abs(p.y - actualStartPos.y);
+    setActualDraftBox({ x, y, width, height });
+  };
+
+  const finishActualDrawing = () => {
+    setIsDrawingActual(false);
+    setActualStartPos(null);
+
+    if (!actualDraftBox) return;
+    const MIN_SIZE = 0.6; // percent
+    const isValid = actualDraftBox.width >= MIN_SIZE && actualDraftBox.height >= MIN_SIZE;
+    setActualDraftBox(null);
+    if (!isValid) return;
+
+    onChange({
+      ...data,
+      actualMarkerBoxes: [...actualMarkerBoxes, actualDraftBox],
+    });
+  };
+
+  const handleExpectedPointerDown = (e: React.PointerEvent) => {
+    if (data.expectedResultType !== 'image' || !data.expectedImage) return;
+    const p = getPercentPos(expectedContainerRef.current, e.clientX, e.clientY);
+    if (!p) return;
+    (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
+    setIsDrawingExpected(true);
+    setExpectedStartPos(p);
+    setExpectedDraftBox({ x: p.x, y: p.y, width: 0, height: 0 });
+  };
+
+  const handleExpectedPointerMove = (e: React.PointerEvent) => {
+    if (!isDrawingExpected || !expectedStartPos) return;
+    const p = getPercentPos(expectedContainerRef.current, e.clientX, e.clientY);
+    if (!p) return;
+
+    const x = Math.min(expectedStartPos.x, p.x);
+    const y = Math.min(expectedStartPos.y, p.y);
+    const width = Math.abs(p.x - expectedStartPos.x);
+    const height = Math.abs(p.y - expectedStartPos.y);
+    setExpectedDraftBox({ x, y, width, height });
+  };
+
+  const finishExpectedDrawing = () => {
+    setIsDrawingExpected(false);
+    setExpectedStartPos(null);
+
+    if (!expectedDraftBox) return;
+    const MIN_SIZE = 0.6; // percent
+    const isValid = expectedDraftBox.width >= MIN_SIZE && expectedDraftBox.height >= MIN_SIZE;
+    setExpectedDraftBox(null);
+    if (!isValid) return;
+
+    onChange({
+      ...data,
+      expectedMarkerBoxes: [...expectedMarkerBoxes, expectedDraftBox],
+    });
+  };
+
   return (
     <div className="w-full bg-white flex flex-col select-none" style={{ fontFamily: '"Noto Sans TC", sans-serif' }}>
       {/* Header Titles - Two Column Layout */}
-      <div className="grid grid-cols-2 w-full mb-10 px-8">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-slate-800 tracking-tight">測試畫面</h2>
+      <div className="grid grid-cols-2 w-full mb-6 px-8 gap-6">
+        <div className="relative flex items-center justify-center text-center min-h-[56px]">
+          <h2 className="text-3xl font-bold text-slate-800 tracking-tight text-center w-full">測試畫面</h2>
+          {showClearButtons && data.screenshot && actualMarkerBoxes.length > 0 && (
+            <button
+              onClick={() => onChange({ ...data, actualMarkerBoxes: [] })}
+              className="absolute right-0 top-1/2 -translate-y-1/2 py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-sm bg-white text-red-600 border border-slate-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98]"
+              title="清除測試畫面標記"
+            >
+              <Eraser className="w-4 h-4" />
+              清除測試標記
+            </button>
+          )}
         </div>
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-slate-800 tracking-tight">預期畫面</h2>
+        <div className="relative flex items-center justify-center text-center min-h-[56px]">
+          <h2 className="text-3xl font-bold text-slate-800 tracking-tight text-center w-full">預期畫面</h2>
+          {showClearButtons && data.expectedResultType === 'image' && data.expectedImage && expectedMarkerBoxes.length > 0 && (
+            <button
+              onClick={() => onChange({ ...data, expectedMarkerBoxes: [] })}
+              className="absolute right-0 top-1/2 -translate-y-1/2 py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-sm bg-white text-red-600 border border-slate-200 hover:border-red-300 hover:bg-red-50 active:scale-[0.98]"
+              title="清除預期畫面標記"
+            >
+              <Eraser className="w-4 h-4" />
+              清除預期標記
+            </button>
+          )}
         </div>
       </div>
 
@@ -33,25 +157,51 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data }) => {
         {/* Left Column: Actual Screenshot */}
         <div className="flex flex-col items-center w-full">
           {data.screenshot ? (
-            <div className={`relative border-[12px] border-slate-100 rounded-[3rem] shadow-2xl overflow-hidden bg-slate-50 w-full ${colMaxWidth}`}>
-               <div className="relative">
-                 <img src={data.screenshot} alt="Actual" className="w-full h-auto block bg-black/5" />
-                 {data.markerBox && (
-                    <div className="absolute pointer-events-none"
-                      style={{
-                        left: `${data.markerBox.x}%`,
-                        top: `${data.markerBox.y}%`,
-                        width: `${data.markerBox.width}%`,
-                        height: `${data.markerBox.height}%`
-                      }}
-                    >
-                      <div className="w-full h-full border-[6px] border-red-500 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
-                    </div>
-                 )}
-               </div>
+            <div className={`relative w-full ${colMaxWidth}`}>
+              <div
+                ref={actualContainerRef}
+                className={`relative touch-none ${data.screenshot ? 'cursor-crosshair' : ''}`}
+                onPointerDown={handleActualPointerDown}
+                onPointerMove={handleActualPointerMove}
+                onPointerUp={finishActualDrawing}
+                onPointerCancel={finishActualDrawing}
+                onPointerLeave={() => { if (isDrawingActual) finishActualDrawing(); }}
+                aria-label="在截圖上拖曳以新增標記"
+              >
+                <img src={data.screenshot} alt="Actual" className="w-full h-auto block pointer-events-none" />
+
+                {actualMarkerBoxes.map((box, idx) => (
+                  <div
+                    key={`${idx}-${box.x}-${box.y}-${box.width}-${box.height}`}
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${box.x}%`,
+                      top: `${box.y}%`,
+                      width: `${box.width}%`,
+                      height: `${box.height}%`,
+                    }}
+                  >
+                    <div className="w-full h-full border-[6px] border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
+                  </div>
+                ))}
+
+                {actualDraftBox && (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${actualDraftBox.x}%`,
+                      top: `${actualDraftBox.y}%`,
+                      width: `${actualDraftBox.width}%`,
+                      height: `${actualDraftBox.height}%`,
+                    }}
+                  >
+                    <div className="w-full h-full border-[6px] border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.35)]"></div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 border-[12px] border-slate-100 rounded-[3rem] ${colMaxWidth}`}>
+            <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 ${colMaxWidth}`}>
                <span className="font-bold text-3xl">尚未上傳截圖</span>
             </div>
           )}
@@ -61,16 +211,56 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data }) => {
         <div className="flex flex-col items-center w-full">
           {data.expectedResultType === 'image' ? (
             data.expectedImage ? (
-              <div className={`relative border-[12px] border-slate-100 rounded-[3rem] shadow-2xl overflow-hidden bg-slate-50 w-full ${colMaxWidth}`}>
-                <img src={data.expectedImage} alt="Expected" className="w-full h-auto block bg-black/5" />
+              <div className={`relative w-full ${colMaxWidth}`}>
+                <div
+                  ref={expectedContainerRef}
+                  className="relative touch-none cursor-crosshair"
+                  onPointerDown={handleExpectedPointerDown}
+                  onPointerMove={handleExpectedPointerMove}
+                  onPointerUp={finishExpectedDrawing}
+                  onPointerCancel={finishExpectedDrawing}
+                  onPointerLeave={() => { if (isDrawingExpected) finishExpectedDrawing(); }}
+                  aria-label="在預期畫面上拖曳以新增標記"
+                >
+                  <img src={data.expectedImage} alt="Expected" className="w-full h-auto block pointer-events-none" />
+
+                  {expectedMarkerBoxes.map((box, idx) => (
+                    <div
+                      key={`${idx}-${box.x}-${box.y}-${box.width}-${box.height}`}
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: `${box.x}%`,
+                        top: `${box.y}%`,
+                        width: `${box.width}%`,
+                        height: `${box.height}%`,
+                      }}
+                    >
+                      <div className="w-full h-full border-[6px] border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)]"></div>
+                    </div>
+                  ))}
+
+                  {expectedDraftBox && (
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: `${expectedDraftBox.x}%`,
+                        top: `${expectedDraftBox.y}%`,
+                        width: `${expectedDraftBox.width}%`,
+                        height: `${expectedDraftBox.height}%`,
+                      }}
+                    >
+                      <div className="w-full h-full border-[6px] border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.35)]"></div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 border-[12px] border-slate-100 rounded-[3rem] ${colMaxWidth}`}>
+              <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 ${colMaxWidth}`}>
                 <span className="font-bold text-3xl">尚未上傳截圖</span>
               </div>
             )
           ) : (
-            <div className={`w-full flex flex-col items-center justify-center border-4 border-dashed border-slate-100 rounded-[3rem] text-slate-400 bg-slate-50/50 aspect-[9/16] ${colMaxWidth}`}>
+            <div className={`w-full flex flex-col items-center justify-center border-4 border-dashed border-slate-100 text-slate-400 bg-slate-50/50 aspect-[9/16] ${colMaxWidth}`}>
                <p className="text-2xl text-slate-600 leading-relaxed whitespace-pre-wrap font-medium text-center px-10">
                  {data.expectedText || "尚未輸入預期效果內容"}
                </p>

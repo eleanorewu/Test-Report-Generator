@@ -17,10 +17,13 @@ export interface ReportData {
   environment: string;
   testDate: string;
   screenshot: string | null;
+  screenshotName: string | null;
   problemDescription: string;
   expectedResultType: 'text' | 'image';
   expectedText: string;
   expectedImage: string | null;
-  markerBox: MarkerBox | null;
+  expectedImageName: string | null;
+  actualMarkerBoxes: MarkerBox[];
+  expectedMarkerBoxes: MarkerBox[];
   tags: string[];
 }

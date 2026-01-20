@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { ReportForm } from './components/ReportForm';
 import { ReportPreview } from './components/ReportPreview';
 import { ReportData, DeviceEnvironment } from './types';
-import { Download, CheckCircle2, PanelLeft, PanelRight } from 'lucide-react';
+import { Download, CheckCircle2, PanelLeft, PanelRight, Eraser } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -16,11 +16,14 @@ const App: React.FC = () => {
     environment: DeviceEnvironment.IOS,
     testDate: new Date().toISOString().split('T')[0],
     screenshot: null,
+    screenshotName: null,
     problemDescription: '',
     expectedResultType: 'image', // 預設改為圖片
     expectedText: '',
     expectedImage: null,
-    markerBox: null,
+    expectedImageName: null,
+    actualMarkerBoxes: [],
+    expectedMarkerBoxes: [],
     tags: [],
   });
 
@@ -107,7 +110,7 @@ const App: React.FC = () => {
           
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 min-w-[1000px]">
             <div ref={reportRef} className="bg-white p-12">
-              <ReportPreview data={reportData} />
+              <ReportPreview data={reportData} onChange={setReportData} showClearButtons={!isExporting} />
             </div>
           </div>
         </section>

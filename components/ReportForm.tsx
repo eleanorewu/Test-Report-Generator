@@ -1,7 +1,7 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { ReportData, DeviceEnvironment } from '../types';
-import { Smartphone, Monitor, Calendar, Image as ImageIcon, Type, Layout, MousePointer2, Eraser, Plus, RefreshCw, X, Tag } from 'lucide-react';
+import { Smartphone, Monitor, Calendar, Image as ImageIcon, Type, Layout, Plus, RefreshCw, X } from 'lucide-react';
 
 interface ReportFormProps {
   data: ReportData;
@@ -9,9 +9,6 @@ interface ReportFormProps {
 }
 
 export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isOtherEnvSelected, setIsOtherEnvSelected] = useState(
     ![DeviceEnvironment.IOS, DeviceEnvironment.ANDROID, DeviceEnvironment.WEB].includes(data.environment as DeviceEnvironment)
   );
@@ -19,60 +16,32 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
   const [isAddingOtherTag, setIsAddingOtherTag] = useState(false);
   const [otherTagValue, setOtherTagValue] = useState('');
 
-  const isWeb = data.environment === DeviceEnvironment.WEB;
-  const isMobile = data.environment === DeviceEnvironment.IOS || data.environment === DeviceEnvironment.ANDROID;
-  
-  const containerBaseClass = "relative border-2 border-dashed border-slate-200 rounded-xl overflow-hidden transition-all bg-slate-50 group flex items-center justify-center";
-  const containerSizeClass = isWeb 
-    ? "w-full min-h-[150px]" 
-    : `w-full max-w-[160px] ${isMobile ? 'aspect-[9/19.5]' : 'aspect-[16/10]'}`;
-
   const defaultTags = ['Development', 'Interaction', 'Content'];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'screenshot' | 'expectedImage') => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        if (field === 'screenshot') {
-          onChange({ ...data, [field]: result, markerBox: null });
-        } else {
-          onChange({ ...data, [field]: result });
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    if (!file) return;
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!containerRef.current || !data.screenshot) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setStartPos({ x, y });
-    setIsDrawing(true);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDrawing || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const currentX = ((e.clientX - rect.left) / rect.width) * 100;
-    const currentY = ((e.clientY - rect.top) / rect.height) * 100;
-
-    const x = Math.min(startPos.x, currentX);
-    const y = Math.min(startPos.y, currentY);
-    const width = Math.abs(currentX - startPos.x);
-    const height = Math.abs(currentY - startPos.y);
-
-    onChange({
-      ...data,
-      markerBox: { x, y, width, height }
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDrawing(false);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      if (field === 'screenshot') {
+        onChange({ 
+          ...data, 
+          screenshot: result, 
+          screenshotName: file.name, 
+          actualMarkerBoxes: [] 
+        });
+      } else {
+        onChange({ 
+          ...data, 
+          expectedImage: result, 
+          expectedImageName: file.name, 
+          expectedMarkerBoxes: [] 
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleTag = (tag: string) => {
@@ -93,10 +62,10 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
   const selectEnvironment = (env: DeviceEnvironment) => {
     if (env === DeviceEnvironment.OTHER) {
       setIsOtherEnvSelected(true);
-      onChange({ ...data, environment: '', markerBox: null });
+      onChange({ ...data, environment: '', actualMarkerBoxes: [], expectedMarkerBoxes: [] });
     } else {
       setIsOtherEnvSelected(false);
-      onChange({ ...data, environment: env, markerBox: null });
+      onChange({ ...data, environment: env, actualMarkerBoxes: [], expectedMarkerBoxes: [] });
     }
   };
 
@@ -228,77 +197,34 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
       {/* Screenshot Upload */}
       <div className="space-y-2">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" /> 上傳測試截圖
-            </label>
-            {data.screenshot && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); onChange({ ...data, markerBox: null }); }}
-                className="text-[10px] font-bold text-red-500 flex items-center gap-1 hover:text-red-700 transition-colors uppercase"
-              >
-                <Eraser className="w-3 h-3" /> 清除標記
-              </button>
-            )}
-          </div>
-          <p className="text-[10px] text-slate-400 font-medium">在測試截圖上拖曳可標示紅框</p>
+          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <ImageIcon className="w-4 h-4" /> 上傳測試截圖
+          </label>
+          <p className="text-[10px] text-slate-400 font-medium">上傳後請在左側「即時預覽」的大圖上拖曳標記</p>
         </div>
         
-        <div className="flex flex-col items-center gap-3">
-          <div 
-            ref={containerRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            className={`${containerBaseClass} ${containerSizeClass} ${data.screenshot ? 'cursor-crosshair' : 'cursor-pointer'}`}
-          >
-            {!data.screenshot && (
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileChange(e, 'screenshot')}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-              />
-            )}
-
-            {data.screenshot ? (
-              <div className="relative w-full h-full select-none flex items-center justify-center">
-                <img src={data.screenshot} alt="Preview" className="w-full h-auto block object-contain pointer-events-none" />
-                {data.markerBox && (
-                  <div 
-                    className="absolute border-2 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)] pointer-events-none"
-                    style={{
-                      left: `${data.markerBox.x}%`,
-                      top: `${data.markerBox.y}%`,
-                      width: `${data.markerBox.width}%`,
-                      height: `${data.markerBox.height}%`
-                    }}
-                  />
-                )}
-                {!data.markerBox && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 pointer-events-none">
-                    <div className="bg-white/90 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm text-slate-900">
-                      <MousePointer2 className="w-3 h-3" /> 拖曳標記
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center text-slate-400 p-4">
-                <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                <span className="text-[10px] font-bold">點擊上傳</span>
-              </div>
-            )}
-          </div>
-
+        <div className="flex flex-col gap-2">
           {data.screenshot && (
-            <label className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 hover:border-indigo-300 cursor-pointer transition-all group active:scale-95">
-              <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'screenshot')} className="hidden" />
-              <RefreshCw className="w-3.5 h-3.5 text-indigo-500 group-hover:rotate-180 transition-transform duration-500" />
-              <span className="text-[11px] font-bold text-slate-600">更換圖片</span>
-            </label>
+            <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
+              <span className="truncate" title={data.screenshotName || '已上傳檔案'}>
+                {data.screenshotName || '已上傳檔案'}
+              </span>
+              <button
+                type="button"
+                onClick={() => onChange({ ...data, screenshot: null, screenshotName: null, actualMarkerBoxes: [] })}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="刪除檔案"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           )}
+
+          <label className="inline-flex items-center justify-center gap-2 px-3 h-[52px] rounded-lg border border-dashed border-slate-300 text-slate-600 text-xs font-semibold cursor-pointer hover:bg-slate-50 transition-colors bg-white">
+            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'screenshot')} className="hidden" />
+            <ImageIcon className="w-4 h-4 opacity-70" />
+            {data.screenshot ? '重新上傳' : '點擊上傳'}
+          </label>
         </div>
       </div>
 
@@ -337,28 +263,28 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
             className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all min-h-[80px] resize-none text-xs text-slate-900 bg-white"
           />
         ) : (
-          <div className="flex flex-col items-center gap-3">
-            <div className={`${containerBaseClass} ${containerSizeClass} cursor-pointer`}>
-              {!data.expectedImage && <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'expectedImage')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />}
-              {data.expectedImage ? (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img src={data.expectedImage} alt="Expected" className="w-full h-auto block object-contain rounded" />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-slate-400 p-4">
-                  <ImageIcon className="w-6 h-6 mb-1 opacity-50" />
-                  <span className="text-[10px] font-bold">預期畫面</span>
-                </div>
-              )}
-            </div>
-            
+          <div className="flex flex-col gap-2">
             {data.expectedImage && (
-              <label className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 hover:border-indigo-300 cursor-pointer transition-all group active:scale-95">
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'expectedImage')} className="hidden" />
-                <RefreshCw className="w-3.5 h-3.5 text-indigo-500 group-hover:rotate-180 transition-transform duration-500" />
-                <span className="text-[11px] font-bold text-slate-600">更換圖片</span>
-              </label>
+              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700">
+                <span className="truncate" title={data.expectedImageName || '已上傳檔案'}>
+                  {data.expectedImageName || '已上傳檔案'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...data, expectedImage: null, expectedImageName: null, expectedMarkerBoxes: [] })}
+                  className="text-red-500 hover:text-red-700 p-1"
+                  title="刪除檔案"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             )}
+
+            <label className="inline-flex items-center justify-center gap-2 px-3 h-[52px] rounded-lg border border-dashed border-slate-300 text-slate-600 text-xs font-semibold cursor-pointer hover:bg-slate-50 transition-colors bg-white">
+              <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'expectedImage')} className="hidden" />
+              <ImageIcon className="w-4 h-4 opacity-70" />
+              {data.expectedImage ? '重新上傳' : '點擊上傳'}
+            </label>
           </div>
         )}
       </div>
