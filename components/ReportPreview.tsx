@@ -37,7 +37,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
 
   const getPercentPos = (el: HTMLDivElement | null, clientX: number, clientY: number) => {
     if (!el) return null;
-    if (!el) return null;
     const rect = el.getBoundingClientRect();
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;

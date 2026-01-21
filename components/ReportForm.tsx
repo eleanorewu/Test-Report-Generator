@@ -22,9 +22,29 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 檢查文件類型
+    if (!file.type.startsWith('image/')) {
+      alert('請選擇圖片文件');
+      return;
+    }
+
+    // 檢查文件大小（限制為 10MB）
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+      alert('圖片文件大小不能超過 10MB');
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      alert('讀取文件失敗，請重試');
+    };
     reader.onloadend = () => {
       const result = reader.result as string;
+      if (!result) {
+        alert('無法讀取文件內容');
+        return;
+      }
       if (field === 'screenshot') {
         onChange({ 
           ...data, 
@@ -42,6 +62,9 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
       }
     };
     reader.readAsDataURL(file);
+    
+    // 重置 input，允許選擇相同文件
+    e.target.value = '';
   };
 
   const toggleTag = (tag: string) => {

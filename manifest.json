@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "QA 測試回報產生器",
+  "version": "1.0.0",
+  "description": "快速建立並匯出專業的視覺化測試報告",
+  "action": {
+    "default_title": "QA 測試回報產生器"
+  },
+  "permissions": [
+    "downloads",
+    "storage",
+    "windows"
+  ],
+  "host_permissions": [],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

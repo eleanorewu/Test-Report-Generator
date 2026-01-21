@@ -4,10 +4,12 @@ import { ReportForm } from './components/ReportForm';
 import { ReportPreview } from './components/ReportPreview';
 import { ReportData, DeviceEnvironment } from './types';
 import { Download, CheckCircle2, PanelLeft, PanelRight, Eraser } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { downloadImage } from './src/utils/chrome';
 
 declare global {
   interface Window {
-    html2canvas: any;
+    html2canvas?: any;
   }
 }
 
@@ -36,11 +38,18 @@ const App: React.FC = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const canvas = await window.html2canvas(reportRef.current, {
+      // 使用導入的 html2canvas 或 window 上的（向後兼容）
+      const html2canvasFn = html2canvas || window.html2canvas;
+      if (!html2canvasFn) {
+        throw new Error('html2canvas is not available');
+      }
+      
+      const canvas = await html2canvasFn(reportRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        allowTaint: false,
       });
       
       const image = canvas.toDataURL('image/png', 1.0);
@@ -52,10 +61,10 @@ const App: React.FC = () => {
       const day = String(now.getDate()).padStart(2, '0');
       const dateStr = `${year}${month}${day}`;
 
-      const link = document.createElement('a');
-      link.download = `${dateStr}_test_report.png`;
-      link.href = image;
-      link.click();
+      const filename = `${dateStr}_test_report.png`;
+      
+      // 使用 Chrome API 或傳統方式下載
+      await downloadImage(image, filename);
     } catch (error) {
       console.error('Export failed:', error);
       alert('匯出失敗，請重試');
