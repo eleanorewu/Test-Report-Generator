@@ -12,7 +12,7 @@ interface ReportPreviewProps {
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, showClearButtons = true }) => {
-  const isMobile = data.environment === DeviceEnvironment.IOS || data.environment === DeviceEnvironment.ANDROID;
+  const isMobile = data.environment === DeviceEnvironment.IOS || data.environment === DeviceEnvironment.ANDROID || data.environment === DeviceEnvironment.TABLET;
   const colMaxWidth = isMobile ? 'max-w-[450px]' : 'max-w-full';
 
   const actualContainerRef = useRef<HTMLDivElement>(null);
@@ -125,7 +125,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
       {/* Header Titles - Two Column Layout */}
       <div className="grid grid-cols-2 w-full mb-6 px-8 gap-6">
         <div className="relative flex items-center justify-center text-center min-h-[56px]">
-          <h2 className="text-3xl font-bold text-slate-800 tracking-tight text-center w-full">測試畫面</h2>
+          <h2 className="text-2xl font-semibold text-slate-800 tracking-tight text-center w-full">測試畫面</h2>
           {showClearButtons && data.screenshot && actualMarkerBoxes.length > 0 && (
             <button
               onClick={() => onChange({ ...data, actualMarkerBoxes: [] })}
@@ -138,7 +138,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
           )}
         </div>
         <div className="relative flex items-center justify-center text-center min-h-[56px]">
-          <h2 className="text-3xl font-bold text-slate-800 tracking-tight text-center w-full">預期畫面</h2>
+          <h2 className="text-2xl font-semibold text-slate-800 tracking-tight text-center w-full">預期畫面</h2>
           {showClearButtons && data.expectedImage && expectedMarkerBoxes.length > 0 && (
             <button
               onClick={() => onChange({ ...data, expectedMarkerBoxes: [] })}
@@ -202,7 +202,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
             </div>
           ) : (
             <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 ${colMaxWidth}`}>
-               <span className="font-bold text-3xl">尚未上傳截圖</span>
+               <span className="font-semibold text-2xl">尚未上傳截圖</span>
             </div>
           )}
         </div>
@@ -255,7 +255,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
             </div>
           ) : (
             <div className={`w-full aspect-[9/16] flex flex-col items-center justify-center text-slate-300 bg-slate-50 ${colMaxWidth}`}>
-              <span className="font-bold text-3xl">尚未上傳截圖</span>
+              <span className="font-semibold text-2xl">尚未上傳截圖</span>
             </div>
           )}
         </div>
@@ -263,30 +263,37 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ data, onChange, sh
 
       {/* Footer Info Section (Left Aligned with Dynamic Content) */}
       <div className="w-full pt-12 border-t-[4px] border-slate-100 flex flex-col gap-6 px-12 pb-12">
-        <div className="flex items-center gap-6 text-4xl font-bold">
-          <span className="text-slate-400 w-[220px] shrink-0">測試設備 :</span>
-          <span className="text-slate-800">{data.environment || "未填寫"}</span>
+        <div className="flex items-center gap-3" style={{ fontSize: '24px' }}>
+          <span className="text-slate-400 w-[180px] shrink-0 font-medium">測試設備 :</span>
+          <span className="text-slate-800 font-medium">{data.environment || "未填寫"}</span>
         </div>
-        <div className="flex items-center gap-6 text-4xl font-bold">
-          <span className="text-slate-400 w-[220px] shrink-0">測試日期 :</span>
-          <span className="text-slate-800">{data.testDate ? data.testDate.replace(/-/g, '/') : "未選擇"}</span>
+        <div className="flex items-center gap-3" style={{ fontSize: '24px' }}>
+          <span className="text-slate-400 w-[180px] shrink-0 font-medium">測試日期 :</span>
+          <span className="text-slate-800 font-medium">{data.testDate ? data.testDate.replace(/-/g, '/') : "未選擇"}</span>
         </div>
-        <div className="flex items-start gap-6 text-4xl font-bold">
-          <span className="text-slate-400 w-[220px] shrink-0 pt-1">問題描述 :</span>
-          <div className="flex flex-col gap-4">
-            {/* Tags integrated into Problem Description field - Updated to Purple Theme */}
+        <div className="flex items-start gap-3" style={{ fontSize: '24px' }}>
+          <span className="text-slate-400 w-[180px] shrink-0 pt-1 font-medium">問題描述 :</span>
+          <div className="flex flex-col gap-2">
             {data.tags.length > 0 && (
-              <div className="flex flex-wrap gap-4">
-                {data.tags.map(tag => (
-                  <div key={tag} className="bg-indigo-50 text-indigo-700 px-6 py-1.5 rounded-full font-bold text-xl border border-indigo-200 shadow-sm tracking-wide">
-                    {formatTag(tag)}
-                  </div>
+              <span className="text-slate-800 leading-tight font-medium">
+                {data.tags.map((tag, index) => (
+                  <React.Fragment key={tag}>
+                    {index > 0 && '、'}
+                    <span className="text-indigo-600">{formatTag(tag)}</span>
+                  </React.Fragment>
                 ))}
-              </div>
+              </span>
             )}
-            <span className="text-slate-800 leading-tight">
-              {data.problemDescription || "尚未輸入問題描述內容"}
-            </span>
+            {data.problemDescription && (
+              <span className="text-slate-800 leading-tight font-medium">
+                {data.problemDescription}
+              </span>
+            )}
+            {!data.problemDescription && data.tags.length === 0 && (
+              <span className="text-slate-800 leading-tight font-medium">
+                尚未輸入問題描述內容
+              </span>
+            )}
           </div>
         </div>
       </div>

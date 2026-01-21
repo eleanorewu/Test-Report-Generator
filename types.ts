@@ -2,6 +2,7 @@
 export enum DeviceEnvironment {
   IOS = 'iOS',
   ANDROID = 'Android',
+  TABLET = 'Tablet',
   WEB = 'Web',
   OTHER = 'Other'
 }

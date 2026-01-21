@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ReportData, DeviceEnvironment } from '../types';
-import { Smartphone, Monitor, Calendar, Image as ImageIcon, Type, Layout, Plus, RefreshCw, X } from 'lucide-react';
+import { Smartphone, Monitor, Calendar, Image as ImageIcon, Type, Layout, Plus, RefreshCw, X, Tablet } from 'lucide-react';
 
 interface ReportFormProps {
   data: ReportData;
@@ -10,13 +10,13 @@ interface ReportFormProps {
 
 export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
   const [isOtherEnvSelected, setIsOtherEnvSelected] = useState(
-    ![DeviceEnvironment.IOS, DeviceEnvironment.ANDROID, DeviceEnvironment.WEB].includes(data.environment as DeviceEnvironment)
+    ![DeviceEnvironment.IOS, DeviceEnvironment.ANDROID, DeviceEnvironment.TABLET, DeviceEnvironment.WEB].includes(data.environment as DeviceEnvironment)
   );
   
   const [isAddingOtherTag, setIsAddingOtherTag] = useState(false);
   const [otherTagValue, setOtherTagValue] = useState('');
 
-  const defaultTags = ['Development', 'Interaction', 'Content'];
+  const defaultTags = ['UI 畫面', '交互方式', '資料正確性', '功能操作'];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'screenshot' | 'expectedImage') => {
     const file = e.target.files?.[0];
@@ -70,9 +70,10 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
   };
 
   const environments = [
+    { value: DeviceEnvironment.WEB, label: '桌機', icon: <Monitor className="w-4 h-4" /> },
+    { value: DeviceEnvironment.TABLET, label: '平板', icon: <Tablet className="w-4 h-4" /> },
     { value: DeviceEnvironment.IOS, label: 'iOS', icon: <Smartphone className="w-4 h-4" /> },
     { value: DeviceEnvironment.ANDROID, label: 'Android', icon: <Smartphone className="w-4 h-4" /> },
-    { value: DeviceEnvironment.WEB, label: 'Web', icon: <Monitor className="w-4 h-4" /> },
     { value: DeviceEnvironment.OTHER, label: '其他', icon: <Plus className="w-4 h-4" /> },
   ];
 
@@ -133,15 +134,15 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
         </label>
 
         {/* Tags Multi-select UI */}
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="grid grid-cols-2 gap-2 mb-2">
           {defaultTags.map(tag => (
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${
+              className={`flex items-center justify-center gap-2 px-2 py-2 rounded-lg border text-xs font-bold transition-all ${
                 data.tags.includes(tag)
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
               }`}
             >
               {tag}
@@ -153,15 +154,15 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
              <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className="px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-600 text-white border border-indigo-600 shadow-sm flex items-center gap-1.5"
+              className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg border text-xs font-bold bg-indigo-600 text-white border-indigo-600 shadow-sm transition-all"
             >
               {tag}
-              <X className="w-3 h-3 opacity-80 hover:opacity-100" />
+              <X className="w-4 h-4 opacity-80 hover:opacity-100" />
             </button>
           ))}
 
           {isAddingOtherTag ? (
-            <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200 col-span-2">
               <input
                 type="text"
                 autoFocus
@@ -170,18 +171,18 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
                 onKeyDown={(e) => e.key === 'Enter' && addCustomTag()}
                 onBlur={() => !otherTagValue && setIsAddingOtherTag(false)}
                 placeholder="輸入標籤..."
-                className="px-3 py-1 rounded-full text-[10px] font-bold border border-indigo-300 outline-none w-24 bg-indigo-50 text-indigo-900"
+                className="flex-1 px-2 py-2 rounded-lg text-xs font-bold border border-indigo-300 outline-none bg-indigo-50 text-indigo-900"
               />
-              <button onClick={addCustomTag} className="p-1 bg-indigo-600 text-white rounded-full">
-                <Plus className="w-3 h-3" />
+              <button onClick={addCustomTag} className="p-2 bg-indigo-600 text-white rounded-lg">
+                <Plus className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <button
               onClick={() => setIsAddingOtherTag(true)}
-              className="px-3 py-1 rounded-full text-[10px] font-bold text-indigo-600 border border-indigo-200 border-dashed hover:bg-indigo-50 transition-colors flex items-center gap-1"
+              className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg border text-xs font-bold bg-white text-slate-600 border-slate-200 hover:border-indigo-300 transition-all"
             >
-              <Plus className="w-3 h-3" /> 其他
+              <Plus className="w-4 h-4" /> 其他
             </button>
           )}
         </div>
@@ -200,7 +201,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({ data, onChange }) => {
           <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
             <ImageIcon className="w-4 h-4" /> 上傳測試截圖
           </label>
-          <p className="text-[10px] text-slate-400 font-medium">上傳後請在左側「即時預覽」的大圖上拖曳標記</p>
         </div>
         
         <div className="flex flex-col gap-2">
